@@ -1417,10 +1417,12 @@ void PS5Context<Parameters>::enqueue(
 
 //! Main Parallel Sample Sort Function. See below for more convenient wrappers.
 template <typename PS5Parameters, typename StringPtr>
-void parallel_sample_sort_base(const StringPtr& strptr, size_t depth) {
+void parallel_sample_sort_base(const StringPtr& strptr, size_t depth,
+                               size_t num_threads) {
 
     using Context = PS5Context<PS5Parameters>;
-    Context ctx(std::thread::hardware_concurrency());
+    Context ctx((num_threads==0) ? 
+            std::thread::hardware_concurrency() : num_threads);
     ctx.total_size = strptr.size();
     ctx.rest_size = strptr.size();
     ctx.num_threads = ctx.threads_.size();
@@ -1462,7 +1464,8 @@ void parallel_sample_sort_base(const StringPtr& strptr, size_t depth) {
 template <typename PS5Parameters, typename StringPtr>
 typename enable_if<!StringPtr::with_lcp, void>::type
 parallel_sample_sort_params(
-    const StringPtr& strptr, size_t depth, size_t memory = 0) {
+    const StringPtr& strptr, size_t depth, size_t num_threads, 
+    size_t memory = 0) {
     tlx::unused(memory);
 
     typedef typename StringPtr::StringSet StringSet;
@@ -1475,7 +1478,7 @@ parallel_sample_sort_params(
     Container shadow = strset.allocate(strset.size());
     StringShadowPtr new_strptr(strset, StringSet(shadow));
 
-    parallel_sample_sort_base<PS5Parameters>(new_strptr, depth);
+    parallel_sample_sort_base<PS5Parameters>(new_strptr, depth, num_threads);
 
     StringSet::deallocate(shadow);
 }
@@ -1485,7 +1488,8 @@ parallel_sample_sort_params(
 template <typename PS5Parameters, typename StringPtr>
 typename enable_if<StringPtr::with_lcp, void>::type
 parallel_sample_sort_params(
-    const StringPtr& strptr, size_t depth, size_t memory = 0) {
+    const StringPtr& strptr, size_t depth, size_t num_threads, 
+    size_t memory = 0) {
     tlx::unused(memory);
 
     typedef typename StringPtr::StringSet StringSet;
@@ -1499,7 +1503,7 @@ parallel_sample_sort_params(
     Container shadow = strset.allocate(strset.size());
     StringShadowLcpPtr new_strptr(strset, StringSet(shadow), strptr.lcp());
 
-    parallel_sample_sort_base<PS5Parameters>(new_strptr, depth);
+    parallel_sample_sort_base<PS5Parameters>(new_strptr, depth, num_threads);
 
     StringSet::deallocate(shadow);
 }
@@ -1510,9 +1514,17 @@ template <typename StringPtr>
 void parallel_sample_sort(
     const StringPtr& strptr, size_t depth, size_t memory) {
     return parallel_sample_sort_params<PS5ParametersDefault>(
-        strptr, depth, memory);
+        strptr, depth, 0, memory);
 }
 
+//! Parallel Sample Sort Function with default parameter size for a generic
+//! StringSet.
+template <typename StringPtr>
+void parallel_sample_sort(
+    const StringPtr& strptr, size_t depth, size_t num_threads, size_t memory) {
+    return parallel_sample_sort_params<PS5ParametersDefault>(
+        strptr, depth, num_threads, memory);
+}
 } // namespace sort_strings_detail
 } // namespace tlx
 
