@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -394,6 +395,35 @@ public:
     }
 };
 
+//! specialization of argument for path options or parameters
+class TLX_VISIBILITY_HIDDEN CmdlineParser::ArgumentPath final : public Argument
+{
+protected:
+    std::filesystem::path& dest_;
+
+public:
+    //! contructor filling most attributes
+    ArgumentPath(char key, const std::string& longkey,
+                   const std::string& keytype, const std::string& desc,
+                   bool required, std::filesystem::path& dest) // NOLINT
+        : Argument(key, longkey, keytype, desc, required), dest_(dest) { }
+
+    const char * type_name() const final { return "path"; }
+
+    //! "process" path argument just by storing it.
+    bool process(int& argc, const char* const*& argv) final { // NOLINT
+        if (argc == 0)
+            return false;
+        dest_ = argv[0];
+        --argc, ++argv;
+        return true;
+    }
+
+    void print_value(std::ostream& os) const final {
+        os << '"' << dest_ << '"';
+    }
+};
+
 //! specialization of argument for multiple string options or parameters
 class TLX_VISIBILITY_HIDDEN CmdlineParser::ArgumentStringlist final
     : public Argument
@@ -607,6 +637,15 @@ void CmdlineParser::add_stringlist(
     calc_option_max(option_list_.back());
 }
 
+void CmdlineParser::add_path(char key, const std::string& longkey,
+                               const std::string& keytype, 
+                               std::filesystem::path& dest, 
+                               const std::string& desc) {
+    option_list_.emplace_back(
+        new ArgumentPath(key, longkey, keytype, desc, false, dest));
+    calc_option_max(option_list_.back());
+}
+
 /******************************************************************************/
 
 void CmdlineParser::add_bool(
@@ -668,6 +707,12 @@ void CmdlineParser::add_stringlist(
     char key, const std::string& longkey,
     std::vector<std::string>& dest, const std::string& desc) {
     return add_stringlist(key, longkey, "", dest, desc);
+}
+
+void CmdlineParser::add_path(char key, const std::string& longkey,
+                             std::filesystem::path& dest,
+                             const std::string& desc) {
+    return add_path(key, longkey, "", dest, desc);
 }
 
 /******************************************************************************/
@@ -733,6 +778,11 @@ void CmdlineParser::add_stringlist(
     return add_stringlist(0, longkey, "", dest, desc);
 }
 
+void CmdlineParser::add_path(const std::string& longkey,
+                               std::filesystem::path& dest, const std::string& desc) {
+    return add_path(0, longkey, "", dest, desc);
+}
+
 /******************************************************************************/
 
 void CmdlineParser::add_param_int(
@@ -796,6 +846,13 @@ void CmdlineParser::add_param_stringlist(
     const std::string& desc) {
     param_list_.emplace_back(
         new ArgumentStringlist(0, name, "", desc, true, dest));
+    calc_param_max(param_list_.back());
+}
+
+void CmdlineParser::add_param_path(
+    const std::string& name, std::filesystem::path& dest,
+    const std::string& desc) {
+    param_list_.emplace_back(new ArgumentPath(0, name, "", desc, true, dest));
     calc_param_max(param_list_.back());
 }
 

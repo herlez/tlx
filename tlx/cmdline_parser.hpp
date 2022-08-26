@@ -11,6 +11,7 @@
 #ifndef TLX_CMDLINE_PARSER_HEADER
 #define TLX_CMDLINE_PARSER_HEADER
 
+#include <filesystem>
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -89,6 +90,7 @@ private:
     class ArgumentBytes64;
     class ArgumentString;
     class ArgumentStringlist;
+    class ArgumentPath;
 
 private:
     //! option and parameter list type
@@ -214,6 +216,11 @@ public:
         char key, const std::string& longkey,
         std::vector<std::string>& dest, const std::string& desc); // NOLINT
 
+    //! add path option -key, --longkey and store to dest
+    void add_path(char key, const std::string& longkey,
+                  std::filesystem::path& dest,
+                  const std::string& desc); // NOLINT
+
     //! \}
 
     /**************************************************************************/
@@ -271,6 +278,11 @@ public:
     void add_stringlist(
         const std::string& longkey,
         std::vector<std::string>& dest, const std::string& desc); // NOLINT
+
+    //! add path option --longkey and store to dest
+    void add_path(const std::string& longkey,
+                    std::filesystem::path& dest,
+                    const std::string& desc); // NOLINT
 
     //! \}
 
@@ -361,6 +373,12 @@ public:
         const std::string& keytype, std::vector<std::string>& dest, // NOLINT
         const std::string& desc);
 
+    //! add path option -key, --longkey [keytype] and store to dest
+    void add_path(
+        char key, const std::string& longkey,
+        const std::string& keytype, std::filesystem::path& dest, // NOLINT
+        const std::string& desc);
+
     //! \}
 
     // ************************************************************************
@@ -422,6 +440,11 @@ public:
         const std::string& name, std::vector<std::string>& dest, // NOLINT
         const std::string& desc);
 
+    //! add path parameter [name] with description and store to dest
+    void add_param_path(
+        const std::string& name, std::filesystem::path& dest, // NOLINT
+        const std::string& desc);
+        
     //! \}
 
     /**************************************************************************/
